@@ -237,7 +237,7 @@
   let editingId = null;
   let currentRows = [];
   let realtimeChannel = null;
-  let supabase = null;
+  let db = null;
 
   const listEl = document.getElementById('list');
   const summaryEl = document.getElementById('summary');
@@ -317,25 +317,25 @@
   }
 
   async function cycleStatus(id, current) {
-    if (!supabase) return;
+    if (!db) return;
     const next = STATUS_NEXT[current] || 'chegou';
-    const { error } = await supabase.from('reservations').update({ status: next }).eq('id', id);
+    const { error } = await db.from('reservations').update({ status: next }).eq('id', id);
     if (error) { console.error(error); showToast('Não deu pra atualizar. Tenta de novo.'); }
     else loadDay();
   }
 
   async function loadDay() {
-    if (!supabase) { renderEmpty(); return; }
-    const { data, error } = await supabase.from('reservations').select('*').eq('data', selectedDate).order('horario', { ascending: true });
+    if (!db) { renderEmpty(); return; }
+    const { data, error } = await db.from('reservations').select('*').eq('data', selectedDate).order('horario', { ascending: true });
     if (error) { console.error(error); offlineNote.style.display = 'block'; return; }
     offlineNote.style.display = 'none';
     renderList(data);
   }
 
   function subscribeRealtime() {
-    if (!supabase) return;
-    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
-    realtimeChannel = supabase.channel('reservations-' + selectedDate)
+    if (!db) return;
+    if (realtimeChannel) db.removeChannel(realtimeChannel);
+    realtimeChannel = db.channel('reservations-' + selectedDate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations', filter: `data=eq.${selectedDate}` }, () => loadDay())
       .subscribe();
   }
@@ -378,12 +378,12 @@
   }
 
   async function loadWeek() {
-    if (!supabase) return;
+    if (!db) return;
     weekView.innerHTML = '<div class="empty"><p>Carregando semana…</p></div>';
     const start = startOfWeek(selectedDate);
     const days = [];
     for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(d.getDate() + i); days.push(toISODate(d)); }
-    const { data, error } = await supabase.from('reservations').select('data, pessoas').gte('data', days[0]).lte('data', days[6]);
+    const { data, error } = await db.from('reservations').select('data, pessoas').gte('data', days[0]).lte('data', days[6]);
     if (error) { console.error(error); weekView.innerHTML = '<div class="empty"><p>Não deu pra carregar a semana.</p></div>'; return; }
     const byDay = {};
     days.forEach(d => byDay[d] = { count: 0, pessoas: 0 });
@@ -430,8 +430,8 @@
     const q = searchInput.value.trim();
     if (!q) { searchResults.innerHTML = '<div class="search-hint">Digite um nome ou telefone pra buscar em todas as reservas.</div>'; return; }
     searchDebounce = setTimeout(async () => {
-      if (!supabase) return;
-      const { data, error } = await supabase.from('reservations').select('*').or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`).order('data', { ascending: false }).limit(60);
+      if (!db) return;
+      const { data, error } = await db.from('reservations').select('*').or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`).order('data', { ascending: false }).limit(60);
       if (error) { console.error(error); return; }
       renderSearchResults(data);
     }, 250);
@@ -495,7 +495,7 @@
     if (!iHorario.value) { document.getElementById('f-horario').classList.add('invalid'); ok = false; }
     if (!iPessoas.value || Number(iPessoas.value) < 1) { document.getElementById('f-pessoas').classList.add('invalid'); ok = false; }
     if (!ok) return;
-    if (!supabase) { showToast('Sem conexão com o banco.'); return; }
+    if (!db) { showToast('Sem conexão com o banco.'); return; }
 
     const payload = {
       nome: iNome.value.trim(), telefone: iTelefone.value.trim(), data: iData.value,
@@ -508,9 +508,9 @@
     try {
       let error;
       if (editingId) {
-        ({ error } = await supabase.from('reservations').update(payload).eq('id', editingId));
+        ({ error } = await db.from('reservations').update(payload).eq('id', editingId));
       } else {
-        ({ error } = await supabase.from('reservations').insert([payload]));
+        ({ error } = await db.from('reservations').insert([payload]));
       }
       if (error) throw error;
       showToast(editingId ? 'Reserva atualizada.' : 'Reserva salva.');
@@ -526,9 +526,9 @@
   });
 
   deleteBtn.addEventListener('click', async () => {
-    if (!editingId || !supabase) return;
+    if (!editingId || !db) return;
     if (!confirm('Excluir essa reserva?')) return;
-    const { error } = await supabase.from('reservations').delete().eq('id', editingId);
+    const { error } = await db.from('reservations').delete().eq('id', editingId);
     if (error) { console.error(error); showToast('Não deu pra excluir. Tenta de novo.'); return; }
     showToast('Reserva excluída.');
     closeSheet();
@@ -541,7 +541,7 @@
 
   const cfg = window.SUPABASE_CONFIG || {};
   if (cfg.url && cfg.anonKey && cfg.url.indexOf('COLE_AQUI') === -1) {
-    supabase = window.supabase.createClient(cfg.url, cfg.anonKey);
+    db = window.supabase.createClient(cfg.url, cfg.anonKey);
     subscribe();
   } else {
     offlineNote.style.display = 'block';
