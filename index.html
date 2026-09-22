@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reservas — Universo Park</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root {
+    --bg: #F3F5EF;
+    --surface: #FFFFFF;
+    --ink: #17251C;
+    --ink-soft: #4B564E;
+    --ink-muted: #8B9188;
+    --line: #DEE2D7;
+    --accent: #B9812B;
+    --accent-ink: #6B4B15;
+    --accent-bg: #F7E9CE;
+    --sage: #5F7D64;
+    --sage-bg: #E4EDE2;
+    --danger: #A0473A;
+    --danger-bg: #F4E2DE;
+    --radius: 14px;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14190F;
+      --surface: #1D2418;
+      --ink: #EDEFE7;
+      --ink-soft: #B7BEB0;
+      --ink-muted: #7C8378;
+      --line: #313A2A;
+      --accent: #E0AA5A;
+      --accent-ink: #F5DDAF;
+      --accent-bg: #3A2E14;
+      --sage: #93B396;
+      --sage-bg: #23301F;
+      --danger: #E0897B;
+      --danger-bg: #3A211D;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
+  body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); min-height: 100%; display: flex; flex-direction: column; }
+  .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .brand span { font-size: 13px; color: var(--ink-muted); }
+  .daynav { display: flex; align-items: center; gap: 8px; }
+  .daynav button.arrow, .icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex: 0 0 auto; }
+  .daynav button.arrow:active, .icon-btn:active { transform: scale(0.94); }
+  .daylabel { flex: 1; text-align: center; cursor: pointer; padding: 6px 4px; border-radius: 10px; position: relative; }
+  .daylabel .weekday { font-family: var(--font-display); font-size: 17px; font-weight: 500; text-transform: capitalize; }
+  .daylabel .full { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .daylabel input[type="date"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .today-pill { font-size: 12px; color: var(--accent-ink); background: var(--accent-bg); border: none; border-radius: 999px; padding: 5px 11px; cursor: pointer; flex: 0 0 auto; }
+  .summary { display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: var(--ink-soft); }
+  .summary b { color: var(--ink); font-weight: 600; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; margin-top: 12px; }
+  .tabs button { flex: 1; border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 7px 0; border-radius: 7px; cursor: pointer; }
+  .tabs button.active { background: var(--ink); color: var(--bg); }
+  .weekview { display: none; }
+  .weekview.active { display: block; }
+  .dayview.hidden { display: none; }
+  .week-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .week-row.is-today { border-color: var(--accent); }
+  .week-row .wd { font-family: var(--font-display); font-weight: 500; font-size: 15px; text-transform: capitalize; }
+  .week-row .wf { font-size: 12px; color: var(--ink-muted); }
+  .week-row .wn { text-align: right; font-size: 13px; color: var(--ink-soft); }
+  .week-row .wn b { color: var(--ink); font-weight: 600; }
+  main { flex: 1; padding: 14px 18px 100px; max-width: 560px; margin: 0 auto; width: 100%; }
+  .empty { text-align: center; padding: 60px 20px; color: var(--ink-muted); }
+  .empty .glyph { font-family: var(--font-display); font-size: 34px; color: var(--line); margin-bottom: 10px; }
+  .empty p { font-size: 14px; margin: 4px 0 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 14px; cursor: pointer; position: relative; }
+  .card .time { font-family: var(--font-display); font-weight: 600; font-size: 20px; color: var(--accent-ink); background: var(--accent-bg); border-radius: 10px; padding: 8px 10px; min-width: 62px; text-align: center; align-self: flex-start; line-height: 1.1; }
+  .card .body { flex: 1; min-width: 0; padding-right: 30px; }
+  .card .name { font-weight: 600; font-size: 15px; margin: 0 0 3px; }
+  .card .meta { font-size: 13px; color: var(--ink-soft); margin: 0 0 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .card .obs { font-size: 12.5px; color: var(--sage); background: var(--sage-bg); display: inline-block; padding: 3px 9px; border-radius: 999px; margin-top: 2px; }
+  .card .wa { color: var(--ink-muted); text-decoration: none; font-size: 12.5px; }
+  .card .wa:hover { color: var(--sage); }
+  .status-btn { position: absolute; right: 12px; bottom: 12px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-muted); font-size: 13px; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1; }
+  .card.status-chegou { border-color: var(--sage); }
+  .card.status-chegou .status-btn { background: var(--sage-bg); border-color: var(--sage); color: var(--sage); }
+  .card.status-nao_veio { border-color: var(--danger); opacity: 0.7; }
+  .card.status-nao_veio .status-btn { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+  .fab { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); border: none; border-radius: 999px; padding: 14px 20px; font-size: 14px; font-weight: 600; font-family: var(--font-body); display: flex; align-items: center; gap: 8px; cursor: pointer; z-index: 30; }
+  .fab:active { transform: scale(0.97); }
+  .sheet-backdrop { position: fixed; inset: 0; background: rgba(15, 20, 12, 0.45); z-index: 40; display: none; align-items: flex-end; }
+  .sheet-backdrop.open { display: flex; }
+  .sheet { background: var(--bg); width: 100%; max-height: 88vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; }
+  .sheet h2 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin: 4px 0 16px; }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 5px; }
+  .field input, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: var(--font-body); }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .field { flex: 1; }
+  .err { color: var(--danger); font-size: 12.5px; margin-top: 4px; display: none; }
+  .field.invalid input { border-color: var(--danger); }
+  .field.invalid .err { display: block; }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .btn { flex: 1; border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; font-family: var(--font-body); border: none; cursor: pointer; }
+  .btn-primary { background: var(--ink); color: var(--bg); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); flex: 0 0 auto; padding: 12px 16px; }
+  .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 13.5px; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 50; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .offline-note { text-align: center; font-size: 13px; color: var(--danger); background: var(--danger-bg); padding: 10px; margin: 0 18px 12px; border-radius: 10px; display: none; }
+  .search-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: none; flex-direction: column; }
+  .search-overlay.open { display: flex; }
+  .search-top { display: flex; align-items: center; gap: 10px; padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; border-bottom: 1px solid var(--line); }
+  .search-top input { flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: var(--font-body); }
+  .search-top input:focus { outline: none; border-color: var(--accent); }
+  .search-results { flex: 1; overflow-y: auto; padding: 14px 18px 40px; max-width: 560px; margin: 0 auto; width: 100%; }
+  .search-hint { text-align: center; color: var(--ink-muted); font-size: 13.5px; padding: 40px 20px; }
+  .search-date { font-size: 12px; color: var(--ink-muted); margin: 0 0 4px 2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>Reservas</h1>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Universo Park</span>
+      <button class="icon-btn" id="openSearch" aria-label="Buscar reserva" style="width:32px;height:32px;font-size:14px;">⌕</button>
+    </div>
+  </div>
+  <div class="daynav">
+    <button class="arrow" id="prevDay" aria-label="Dia anterior">‹</button>
+    <div class="daylabel" id="dayLabelWrap">
+      <div class="weekday" id="dayWeekday">—</div>
+      <div class="full" id="dayFull">—</div>
+      <input type="date" id="dayPicker" aria-label="Escolher data">
+    </div>
+    <button class="arrow" id="nextDay" aria-label="Próximo dia">›</button>
+    <button class="today-pill" id="todayBtn" style="display:none">hoje</button>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="tabs">
+    <button class="active" id="tabDay">Dia</button>
+    <button id="tabWeek">Semana</button>
+  </div>
+</div>
+
+<div class="offline-note" id="offlineNote">Não foi possível conectar ao banco de reservas. Confere o config.js.</div>
+
+<main>
+  <div class="dayview" id="dayView"><div id="list"></div></div>
+  <div class="weekview" id="weekView"></div>
+</main>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-top">
+    <button class="icon-btn" id="closeSearch" aria-label="Fechar busca">‹</button>
+    <input type="text" id="searchInput" placeholder="Nome ou telefone">
+  </div>
+  <div class="search-results" id="searchResults">
+    <div class="search-hint">Digite um nome ou telefone pra buscar em todas as reservas.</div>
+  </div>
+</div>
+
+<button class="fab" id="openAdd">+ Nova reserva</button>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet">
+    <h2 id="sheetTitle">Nova reserva</h2>
+    <div class="field" id="f-nome">
+      <label for="i-nome">Nome</label>
+      <input id="i-nome" type="text" placeholder="Nome de quem reservou">
+      <div class="err">Informe o nome.</div>
+    </div>
+    <div class="field" id="f-telefone">
+      <label for="i-telefone">Telefone</label>
+      <input id="i-telefone" type="tel" placeholder="62999999999">
+      <div class="err">Informe o telefone.</div>
+    </div>
+    <div class="row2">
+      <div class="field" id="f-data">
+        <label for="i-data">Data</label>
+        <input id="i-data" type="date">
+        <div class="err">Escolha a data.</div>
+      </div>
+      <div class="field" id="f-horario">
+        <label for="i-horario">Horário</label>
+        <input id="i-horario" type="time">
+        <div class="err">Escolha o horário.</div>
+      </div>
+    </div>
+    <div class="field" id="f-pessoas">
+      <label for="i-pessoas">Pessoas</label>
+      <input id="i-pessoas" type="number" min="1" step="1" placeholder="4">
+      <div class="err">Informe quantas pessoas.</div>
+    </div>
+    <div class="field">
+      <label for="i-obs">Observação / desconto (opcional)</label>
+      <textarea id="i-obs" rows="2" placeholder="Ex: desconto Megusta50, 1 autista com desconto na atração"></textarea>
+    </div>
+    <div class="field">
+      <label for="i-atendente">Quem lançou (opcional)</label>
+      <input id="i-atendente" type="text" placeholder="Nome de quem atendeu">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-danger" id="deleteBtn" style="display:none">Excluir</button>
+      <button class="btn btn-ghost" id="cancelBtn">Cancelar</button>
+      <button class="btn btn-primary" id="saveBtn">Salvar reserva</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const WEEKDAYS = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+  function toISODate(d) {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function fromISODate(s) {
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  let selectedDate = toISODate(new Date());
+  let editingId = null;
+  let currentRows = [];
+  let realtimeChannel = null;
+  let supabase = null;
+
+  const listEl = document.getElementById('list');
+  const summaryEl = document.getElementById('summary');
+  const dayWeekday = document.getElementById('dayWeekday');
+  const dayFull = document.getElementById('dayFull');
+  const dayPicker = document.getElementById('dayPicker');
+  const todayBtn = document.getElementById('todayBtn');
+  const offlineNote = document.getElementById('offlineNote');
+  const toastEl = document.getElementById('toast');
+  const dayView = document.getElementById('dayView');
+  const weekView = document.getElementById('weekView');
+  const tabDay = document.getElementById('tabDay');
+  const tabWeek = document.getElementById('tabWeek');
+  const searchOverlay = document.getElementById('searchOverlay');
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 1800);
+  }
+
+  function renderDayLabel() {
+    const d = fromISODate(selectedDate);
+    dayWeekday.textContent = WEEKDAYS[d.getDay()];
+    dayFull.textContent = `${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+    dayPicker.value = selectedDate;
+    todayBtn.style.display = selectedDate === toISODate(new Date()) ? 'none' : 'block';
+  }
+
+  function renderEmpty() {
+    listEl.innerHTML = `<div class="empty"><div class="glyph">＋</div><p>Nenhuma reserva pra esse dia ainda.<br>Toca em "Nova reserva" pra lançar uma.</p></div>`;
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function waLink(telefone) {
+    const digits = String(telefone || '').replace(/\D/g, '');
+    if (!digits) return null;
+    const withCountry = digits.length <= 11 ? '55' + digits : digits;
+    return `https://wa.me/${withCountry}`;
+  }
+
+  const STATUS_ICON = { pendente: '○', chegou: '✓', nao_veio: '✕' };
+  const STATUS_NEXT = { pendente: 'chegou', chegou: 'nao_veio', nao_veio: 'pendente' };
+
+  function cardHtml(r) {
+    const status = r.status || 'pendente';
+    const wa = waLink(r.telefone);
+    return `
+      <div class="card status-${status}" data-id="${r.id}">
+        <div class="time">${escapeHtml(r.horario || '—')}</div>
+        <div class="body">
+          <p class="name">${escapeHtml(r.nome)}</p>
+          <p class="meta">
+            <span>${escapeHtml(r.pessoas)} pessoa${Number(r.pessoas) === 1 ? '' : 's'}</span>
+            ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()">whatsapp ↗</a>` : ''}
+          </p>
+          ${r.observacao ? `<span class="obs">${escapeHtml(r.observacao)}</span>` : ''}
+        </div>
+        <button class="status-btn" data-status-id="${r.id}" data-status="${status}" aria-label="Marcar chegada" onclick="event.stopPropagation()">${STATUS_ICON[status]}</button>
+      </div>`;
+  }
+
+  function renderList(rows) {
+    currentRows = rows;
+    if (rows.length === 0) { renderEmpty(); summaryEl.innerHTML = ''; return; }
+    let totalPessoas = 0;
+    rows.forEach(r => totalPessoas += Number(r.pessoas) || 0);
+    listEl.innerHTML = rows.map(cardHtml).join('');
+    summaryEl.innerHTML = `<span><b>${rows.length}</b> reserva${rows.length === 1 ? '' : 's'}</span><span><b>${totalPessoas}</b> pessoas reservadas</span>`;
+    listEl.querySelectorAll('.card').forEach(card => card.addEventListener('click', () => openEdit(card.dataset.id)));
+    listEl.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => cycleStatus(btn.dataset.statusId, btn.dataset.status)));
+  }
+
+  async function cycleStatus(id, current) {
+    if (!supabase) return;
+    const next = STATUS_NEXT[current] || 'chegou';
+    const { error } = await supabase.from('reservations').update({ status: next }).eq('id', id);
+    if (error) { console.error(error); showToast('Não deu pra atualizar. Tenta de novo.'); }
+    else loadDay();
+  }
+
+  async function loadDay() {
+    if (!supabase) { renderEmpty(); return; }
+    const { data, error } = await supabase.from('reservations').select('*').eq('data', selectedDate).order('horario', { ascending: true });
+    if (error) { console.error(error); offlineNote.style.display = 'block'; return; }
+    offlineNote.style.display = 'none';
+    renderList(data);
+  }
+
+  function subscribeRealtime() {
+    if (!supabase) return;
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    realtimeChannel = supabase.channel('reservations-' + selectedDate)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations', filter: `data=eq.${selectedDate}` }, () => loadDay())
+      .subscribe();
+  }
+
+  function subscribe() { loadDay(); subscribeRealtime(); }
+
+  function changeDay(delta) {
+    const d = fromISODate(selectedDate);
+    d.setDate(d.getDate() + delta);
+    selectedDate = toISODate(d);
+    renderDayLabel();
+    subscribe();
+  }
+
+  document.getElementById('prevDay').addEventListener('click', () => changeDay(-1));
+  document.getElementById('nextDay').addEventListener('click', () => changeDay(1));
+  todayBtn.addEventListener('click', () => { selectedDate = toISODate(new Date()); renderDayLabel(); subscribe(); });
+  dayPicker.addEventListener('change', () => {
+    if (dayPicker.value) { selectedDate = dayPicker.value; renderDayLabel(); subscribe(); }
+  });
+
+  // --- Tabs ---
+  function showDayTab() {
+    tabDay.classList.add('active'); tabWeek.classList.remove('active');
+    dayView.classList.remove('hidden'); weekView.classList.remove('active');
+  }
+  function showWeekTab() {
+    tabWeek.classList.add('active'); tabDay.classList.remove('active');
+    dayView.classList.add('hidden'); weekView.classList.add('active');
+    loadWeek();
+  }
+  tabDay.addEventListener('click', showDayTab);
+  tabWeek.addEventListener('click', showWeekTab);
+
+  function startOfWeek(iso) {
+    const d = fromISODate(iso);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    return d;
+  }
+
+  async function loadWeek() {
+    if (!supabase) return;
+    weekView.innerHTML = '<div class="empty"><p>Carregando semana…</p></div>';
+    const start = startOfWeek(selectedDate);
+    const days = [];
+    for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(d.getDate() + i); days.push(toISODate(d)); }
+    const { data, error } = await supabase.from('reservations').select('data, pessoas').gte('data', days[0]).lte('data', days[6]);
+    if (error) { console.error(error); weekView.innerHTML = '<div class="empty"><p>Não deu pra carregar a semana.</p></div>'; return; }
+    const byDay = {};
+    days.forEach(d => byDay[d] = { count: 0, pessoas: 0 });
+    data.forEach(r => { if (byDay[r.data]) { byDay[r.data].count++; byDay[r.data].pessoas += Number(r.pessoas) || 0; } });
+    const todayISO = toISODate(new Date());
+    weekView.innerHTML = days.map(d => {
+      const info = byDay[d], dt = fromISODate(d);
+      return `<div class="week-row${d === todayISO ? ' is-today' : ''}" data-date="${d}">
+        <div><div class="wd">${WEEKDAYS[dt.getDay()]}</div><div class="wf">${dt.getDate()} de ${MONTHS[dt.getMonth()]}</div></div>
+        <div class="wn"><div><b>${info.count}</b> reserva${info.count === 1 ? '' : 's'}</div><div><b>${info.pessoas}</b> pessoas reservadas</div></div>
+      </div>`;
+    }).join('');
+    weekView.querySelectorAll('.week-row').forEach(row => row.addEventListener('click', () => {
+      selectedDate = row.dataset.date; renderDayLabel(); subscribe(); showDayTab();
+    }));
+  }
+
+  // --- Busca ---
+  let searchDebounce = null;
+  function openSearch() {
+    searchOverlay.classList.add('open'); searchInput.value = '';
+    searchResults.innerHTML = '<div class="search-hint">Digite um nome ou telefone pra buscar em todas as reservas.</div>';
+    setTimeout(() => searchInput.focus(), 50);
+  }
+  function closeSearch() { searchOverlay.classList.remove('open'); }
+  document.getElementById('openSearch').addEventListener('click', openSearch);
+  document.getElementById('closeSearch').addEventListener('click', closeSearch);
+
+  function renderSearchResults(rows) {
+    if (rows.length === 0) { searchResults.innerHTML = '<div class="search-hint">Nenhuma reserva encontrada.</div>'; return; }
+    searchResults.innerHTML = rows.map(r => {
+      const dt = fromISODate(r.data);
+      return `<div class="search-date">${WEEKDAYS[dt.getDay()]}, ${dt.getDate()} de ${MONTHS[dt.getMonth()]}</div>${cardHtml(r)}`;
+    }).join('');
+    searchResults.querySelectorAll('.card').forEach(card => card.addEventListener('click', () => {
+      const row = rows.find(r => String(r.id) === card.dataset.id);
+      if (row) { closeSearch(); openEditRow(row); }
+    }));
+    searchResults.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => cycleStatus(btn.dataset.statusId, btn.dataset.status)));
+  }
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    const q = searchInput.value.trim();
+    if (!q) { searchResults.innerHTML = '<div class="search-hint">Digite um nome ou telefone pra buscar em todas as reservas.</div>'; return; }
+    searchDebounce = setTimeout(async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('reservations').select('*').or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`).order('data', { ascending: false }).limit(60);
+      if (error) { console.error(error); return; }
+      renderSearchResults(data);
+    }, 250);
+  });
+
+  // --- Sheet / form ---
+  const sheetBackdrop = document.getElementById('sheetBackdrop');
+  const sheetTitle = document.getElementById('sheetTitle');
+  const iNome = document.getElementById('i-nome');
+  const iTelefone = document.getElementById('i-telefone');
+  const iData = document.getElementById('i-data');
+  const iHorario = document.getElementById('i-horario');
+  const iPessoas = document.getElementById('i-pessoas');
+  const iObs = document.getElementById('i-obs');
+  const iAtendente = document.getElementById('i-atendente');
+  const deleteBtn = document.getElementById('deleteBtn');
+
+  function clearErrors() {
+    ['f-nome','f-telefone','f-data','f-horario','f-pessoas'].forEach(id => document.getElementById(id).classList.remove('invalid'));
+  }
+  [iNome, iTelefone, iData, iHorario, iPessoas].forEach(input => input.addEventListener('input', () => input.closest('.field').classList.remove('invalid')));
+
+  function openAdd() {
+    editingId = null;
+    sheetTitle.textContent = 'Nova reserva';
+    deleteBtn.style.display = 'none';
+    clearErrors();
+    iNome.value = ''; iTelefone.value = ''; iData.value = selectedDate; iHorario.value = '';
+    iPessoas.value = ''; iObs.value = ''; iAtendente.value = '';
+    sheetBackdrop.classList.add('open');
+  }
+
+  function openEditRow(r) {
+    editingId = r.id;
+    sheetTitle.textContent = 'Editar reserva';
+    deleteBtn.style.display = 'block';
+    clearErrors();
+    iNome.value = r.nome || ''; iTelefone.value = r.telefone || ''; iData.value = r.data || selectedDate;
+    iHorario.value = r.horario || ''; iPessoas.value = r.pessoas || ''; iObs.value = r.observacao || '';
+    iAtendente.value = r.atendente || '';
+    sheetBackdrop.classList.add('open');
+  }
+
+  function openEdit(id) {
+    const row = currentRows.find(r => String(r.id) === id);
+    if (row) openEditRow(row);
+  }
+
+  function closeSheet() { sheetBackdrop.classList.remove('open'); }
+
+  document.getElementById('openAdd').addEventListener('click', openAdd);
+  document.getElementById('cancelBtn').addEventListener('click', closeSheet);
+  sheetBackdrop.addEventListener('click', e => { if (e.target === sheetBackdrop) closeSheet(); });
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    clearErrors();
+    let ok = true;
+    if (!iNome.value.trim()) { document.getElementById('f-nome').classList.add('invalid'); ok = false; }
+    if (!iTelefone.value.trim()) { document.getElementById('f-telefone').classList.add('invalid'); ok = false; }
+    if (!iData.value) { document.getElementById('f-data').classList.add('invalid'); ok = false; }
+    if (!iHorario.value) { document.getElementById('f-horario').classList.add('invalid'); ok = false; }
+    if (!iPessoas.value || Number(iPessoas.value) < 1) { document.getElementById('f-pessoas').classList.add('invalid'); ok = false; }
+    if (!ok) return;
+    if (!supabase) { showToast('Sem conexão com o banco.'); return; }
+
+    const payload = {
+      nome: iNome.value.trim(), telefone: iTelefone.value.trim(), data: iData.value,
+      horario: iHorario.value, pessoas: Number(iPessoas.value), observacao: iObs.value.trim(),
+      atendente: iAtendente.value.trim()
+    };
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    try {
+      let error;
+      if (editingId) {
+        ({ error } = await supabase.from('reservations').update(payload).eq('id', editingId));
+      } else {
+        ({ error } = await supabase.from('reservations').insert([payload]));
+      }
+      if (error) throw error;
+      showToast(editingId ? 'Reserva atualizada.' : 'Reserva salva.');
+      if (payload.data !== selectedDate) { selectedDate = payload.data; renderDayLabel(); subscribe(); }
+      else loadDay();
+      closeSheet();
+    } catch (e) {
+      console.error(e);
+      showToast('Não deu pra salvar. Tenta de novo.');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!editingId || !supabase) return;
+    if (!confirm('Excluir essa reserva?')) return;
+    const { error } = await supabase.from('reservations').delete().eq('id', editingId);
+    if (error) { console.error(error); showToast('Não deu pra excluir. Tenta de novo.'); return; }
+    showToast('Reserva excluída.');
+    closeSheet();
+    loadDay();
+  });
+
+  // --- Init ---
+  renderDayLabel();
+  renderEmpty();
+
+  const cfg = window.SUPABASE_CONFIG || {};
+  if (cfg.url && cfg.anonKey && cfg.url.indexOf('COLE_AQUI') === -1) {
+    supabase = window.supabase.createClient(cfg.url, cfg.anonKey);
+    subscribe();
+  } else {
+    offlineNote.style.display = 'block';
+    offlineNote.textContent = 'Preenche a URL e a chave do Supabase em config.js.';
+  }
+</script>
+</body>
+</html>
