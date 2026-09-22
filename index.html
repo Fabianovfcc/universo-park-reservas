@@ -66,15 +66,27 @@
   .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; margin-top: 12px; }
   .tabs button { flex: 1; border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-body); font-size: 13px; font-weight: 500; padding: 7px 0; border-radius: 7px; cursor: pointer; }
   .tabs button.active { background: var(--ink); color: var(--bg); }
-  .weekview { display: none; }
-  .weekview.active { display: block; }
+  .weekview, .monthview { display: none; }
+  .weekview.active, .monthview.active { display: block; }
   .dayview.hidden { display: none; }
+  .subnav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .subnav-label { flex: 1; text-align: center; font-family: var(--font-display); font-weight: 500; font-size: 15px; text-transform: capitalize; }
   .week-row { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
   .week-row.is-today { border-color: var(--accent); }
   .week-row .wd { font-family: var(--font-display); font-weight: 500; font-size: 15px; text-transform: capitalize; }
   .week-row .wf { font-size: 12px; color: var(--ink-muted); }
   .week-row .wn { text-align: right; font-size: 13px; color: var(--ink-soft); }
   .week-row .wn b { color: var(--ink); font-weight: 600; }
+  .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 6px; }
+  .cal-header div { text-align: center; font-size: 11px; color: var(--ink-muted); text-transform: uppercase; }
+  .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .month-cell { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; gap: 2px; }
+  .month-cell .num { font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+  .month-cell .badge { font-size: 9.5px; color: var(--ink-soft); }
+  .month-cell.outside { opacity: 0.35; }
+  .month-cell.is-today { border-color: var(--accent); }
+  .month-cell.has-res { border-color: var(--sage); }
+  .month-legend { margin-top: 12px; font-size: 12px; color: var(--ink-muted); text-align: center; }
   main { flex: 1; padding: 14px 18px 100px; max-width: 560px; margin: 0 auto; width: 100%; }
   .empty { text-align: center; padding: 60px 20px; color: var(--ink-muted); }
   .empty .glyph { font-family: var(--font-display); font-size: 34px; color: var(--line); margin-bottom: 10px; }
@@ -106,7 +118,15 @@
   .row2 .field { flex: 1; }
   .err { color: var(--danger); font-size: 12.5px; margin-top: 4px; display: none; }
   .field.invalid input { border-color: var(--danger); }
+  .field.invalid .counter { border-color: var(--danger); }
   .field.invalid .err { display: block; }
+  .counter-row { display: flex; gap: 10px; }
+  .counter { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .counter-label { font-size: 12px; color: var(--ink-soft); }
+  .counter-controls { display: flex; align-items: center; gap: 12px; }
+  .counter-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 16px; font-family: var(--font-body); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .counter-btn:active { transform: scale(0.94); }
+  .counter-controls .val { min-width: 22px; text-align: center; font-weight: 600; font-size: 15px; }
   .sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
   .btn { flex: 1; border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; font-family: var(--font-body); border: none; cursor: pointer; }
   .btn-primary { background: var(--ink); color: var(--bg); }
@@ -150,6 +170,7 @@
   <div class="tabs">
     <button class="active" id="tabDay">Dia</button>
     <button id="tabWeek">Semana</button>
+    <button id="tabMonth">Mês</button>
   </div>
 </div>
 
@@ -157,7 +178,23 @@
 
 <main>
   <div class="dayview" id="dayView"><div id="list"></div></div>
-  <div class="weekview" id="weekView"></div>
+  <div class="weekview" id="weekView">
+    <div class="subnav">
+      <button class="arrow icon-btn" id="weekPrev" aria-label="Semana anterior">‹</button>
+      <div class="subnav-label" id="weekLabel">—</div>
+      <button class="arrow icon-btn" id="weekNext" aria-label="Próxima semana">›</button>
+    </div>
+    <div id="weekRows"></div>
+  </div>
+  <div class="monthview" id="monthView">
+    <div class="subnav">
+      <button class="arrow icon-btn" id="monthPrev" aria-label="Mês anterior">‹</button>
+      <div class="subnav-label" id="monthLabel">—</div>
+      <button class="arrow icon-btn" id="monthNext" aria-label="Próximo mês">›</button>
+    </div>
+    <div id="monthGrid"></div>
+    <div class="month-legend">toque num dia pra ver os detalhes</div>
+  </div>
 </main>
 
 <div class="search-overlay" id="searchOverlay">
@@ -198,9 +235,26 @@
       </div>
     </div>
     <div class="field" id="f-pessoas">
-      <label for="i-pessoas">Pessoas</label>
-      <input id="i-pessoas" type="number" min="1" step="1" placeholder="4">
-      <div class="err">Informe quantas pessoas.</div>
+      <label>Pessoas</label>
+      <div class="counter-row">
+        <div class="counter">
+          <span class="counter-label">Adultos</span>
+          <div class="counter-controls">
+            <button type="button" class="counter-btn" id="adultosMinus" aria-label="Diminuir adultos">−</button>
+            <span class="val" id="adultosVal">1</span>
+            <button type="button" class="counter-btn" id="adultosPlus" aria-label="Aumentar adultos">+</button>
+          </div>
+        </div>
+        <div class="counter">
+          <span class="counter-label">Crianças</span>
+          <div class="counter-controls">
+            <button type="button" class="counter-btn" id="criancasMinus" aria-label="Diminuir crianças">−</button>
+            <span class="val" id="criancasVal">0</span>
+            <button type="button" class="counter-btn" id="criancasPlus" aria-label="Aumentar crianças">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="err">Informe pelo menos 1 pessoa.</div>
     </div>
     <div class="field">
       <label for="i-obs">Observação / desconto (opcional)</label>
@@ -222,7 +276,9 @@
 
 <script>
   const WEEKDAYS = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const WEEKDAYS_SHORT = ['dom','seg','ter','qua','qui','sex','sáb'];
   const MONTHS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const MONTHS_FULL = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
   function toISODate(d) {
     const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
@@ -234,6 +290,8 @@
   }
 
   let selectedDate = toISODate(new Date());
+  let weekAnchor = selectedDate;
+  let monthAnchor = toISODate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   let editingId = null;
   let currentRows = [];
   let realtimeChannel = null;
@@ -249,8 +307,14 @@
   const toastEl = document.getElementById('toast');
   const dayView = document.getElementById('dayView');
   const weekView = document.getElementById('weekView');
+  const weekRowsEl = document.getElementById('weekRows');
+  const weekLabel = document.getElementById('weekLabel');
+  const monthView = document.getElementById('monthView');
+  const monthGridEl = document.getElementById('monthGrid');
+  const monthLabel = document.getElementById('monthLabel');
   const tabDay = document.getElementById('tabDay');
   const tabWeek = document.getElementById('tabWeek');
+  const tabMonth = document.getElementById('tabMonth');
   const searchOverlay = document.getElementById('searchOverlay');
   const searchInput = document.getElementById('searchInput');
   const searchResults = document.getElementById('searchResults');
@@ -296,7 +360,7 @@
         <div class="body">
           <p class="name">${escapeHtml(r.nome)}</p>
           <p class="meta">
-            <span>${escapeHtml(r.pessoas)} pessoa${Number(r.pessoas) === 1 ? '' : 's'}</span>
+            <span>${escapeHtml(r.pessoas)} pessoa${Number(r.pessoas) === 1 ? '' : 's'}${Number(r.criancas) > 0 ? ` (${r.criancas} criança${Number(r.criancas) === 1 ? '' : 's'})` : ''}</span>
             ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()">whatsapp ↗</a>` : ''}
           </p>
           ${r.observacao ? `<span class="obs">${escapeHtml(r.observacao)}</span>` : ''}
@@ -346,29 +410,32 @@
     const d = fromISODate(selectedDate);
     d.setDate(d.getDate() + delta);
     selectedDate = toISODate(d);
+    weekAnchor = selectedDate;
     renderDayLabel();
     subscribe();
   }
 
   document.getElementById('prevDay').addEventListener('click', () => changeDay(-1));
   document.getElementById('nextDay').addEventListener('click', () => changeDay(1));
-  todayBtn.addEventListener('click', () => { selectedDate = toISODate(new Date()); renderDayLabel(); subscribe(); });
+  todayBtn.addEventListener('click', () => { selectedDate = toISODate(new Date()); weekAnchor = selectedDate; renderDayLabel(); subscribe(); });
   dayPicker.addEventListener('change', () => {
-    if (dayPicker.value) { selectedDate = dayPicker.value; renderDayLabel(); subscribe(); }
+    if (dayPicker.value) { selectedDate = dayPicker.value; weekAnchor = selectedDate; renderDayLabel(); subscribe(); }
   });
 
   // --- Tabs ---
-  function showDayTab() {
-    tabDay.classList.add('active'); tabWeek.classList.remove('active');
-    dayView.classList.remove('hidden'); weekView.classList.remove('active');
+  function showTab(tab) {
+    tabDay.classList.toggle('active', tab === 'day');
+    tabWeek.classList.toggle('active', tab === 'week');
+    tabMonth.classList.toggle('active', tab === 'month');
+    dayView.classList.toggle('hidden', tab !== 'day');
+    weekView.classList.toggle('active', tab === 'week');
+    monthView.classList.toggle('active', tab === 'month');
+    if (tab === 'week') loadWeek();
+    if (tab === 'month') loadMonth();
   }
-  function showWeekTab() {
-    tabWeek.classList.add('active'); tabDay.classList.remove('active');
-    dayView.classList.add('hidden'); weekView.classList.add('active');
-    loadWeek();
-  }
-  tabDay.addEventListener('click', showDayTab);
-  tabWeek.addEventListener('click', showWeekTab);
+  tabDay.addEventListener('click', () => showTab('day'));
+  tabWeek.addEventListener('click', () => showTab('week'));
+  tabMonth.addEventListener('click', () => showTab('month'));
 
   function startOfWeek(iso) {
     const d = fromISODate(iso);
@@ -377,27 +444,79 @@
     return d;
   }
 
+  document.getElementById('weekPrev').addEventListener('click', () => shiftWeekAnchor(-7));
+  document.getElementById('weekNext').addEventListener('click', () => shiftWeekAnchor(7));
+  function shiftWeekAnchor(delta) {
+    const d = fromISODate(weekAnchor);
+    d.setDate(d.getDate() + delta);
+    weekAnchor = toISODate(d);
+    loadWeek();
+  }
+
   async function loadWeek() {
     if (!db) return;
-    weekView.innerHTML = '<div class="empty"><p>Carregando semana…</p></div>';
-    const start = startOfWeek(selectedDate);
+    weekRowsEl.innerHTML = '<div class="empty"><p>Carregando semana…</p></div>';
+    const start = startOfWeek(weekAnchor);
     const days = [];
     for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(d.getDate() + i); days.push(toISODate(d)); }
+    const end = fromISODate(days[6]);
+    weekLabel.textContent = `${start.getDate()} – ${end.getDate()} de ${MONTHS[end.getMonth()]}`;
     const { data, error } = await db.from('reservations').select('data, pessoas').gte('data', days[0]).lte('data', days[6]);
-    if (error) { console.error(error); weekView.innerHTML = '<div class="empty"><p>Não deu pra carregar a semana.</p></div>'; return; }
+    if (error) { console.error(error); weekRowsEl.innerHTML = '<div class="empty"><p>Não deu pra carregar a semana.</p></div>'; return; }
     const byDay = {};
     days.forEach(d => byDay[d] = { count: 0, pessoas: 0 });
     data.forEach(r => { if (byDay[r.data]) { byDay[r.data].count++; byDay[r.data].pessoas += Number(r.pessoas) || 0; } });
     const todayISO = toISODate(new Date());
-    weekView.innerHTML = days.map(d => {
+    weekRowsEl.innerHTML = days.map(d => {
       const info = byDay[d], dt = fromISODate(d);
       return `<div class="week-row${d === todayISO ? ' is-today' : ''}" data-date="${d}">
         <div><div class="wd">${WEEKDAYS[dt.getDay()]}</div><div class="wf">${dt.getDate()} de ${MONTHS[dt.getMonth()]}</div></div>
         <div class="wn"><div><b>${info.count}</b> reserva${info.count === 1 ? '' : 's'}</div><div><b>${info.pessoas}</b> pessoas reservadas</div></div>
       </div>`;
     }).join('');
-    weekView.querySelectorAll('.week-row').forEach(row => row.addEventListener('click', () => {
-      selectedDate = row.dataset.date; renderDayLabel(); subscribe(); showDayTab();
+    weekRowsEl.querySelectorAll('.week-row').forEach(row => row.addEventListener('click', () => {
+      selectedDate = row.dataset.date; weekAnchor = selectedDate; renderDayLabel(); subscribe(); showTab('day');
+    }));
+  }
+
+  document.getElementById('monthPrev').addEventListener('click', () => shiftMonthAnchor(-1));
+  document.getElementById('monthNext').addEventListener('click', () => shiftMonthAnchor(1));
+  function shiftMonthAnchor(delta) {
+    const d = fromISODate(monthAnchor);
+    d.setMonth(d.getMonth() + delta);
+    d.setDate(1);
+    monthAnchor = toISODate(d);
+    loadMonth();
+  }
+
+  async function loadMonth() {
+    if (!db) return;
+    monthGridEl.innerHTML = '<div class="empty"><p>Carregando mês…</p></div>';
+    const first = fromISODate(monthAnchor);
+    monthLabel.textContent = `${MONTHS_FULL[first.getMonth()]} de ${first.getFullYear()}`;
+    const gridStart = new Date(first);
+    gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+    const cells = [];
+    for (let i = 0; i < 42; i++) { const d = new Date(gridStart); d.setDate(d.getDate() + i); cells.push(toISODate(d)); }
+    const { data, error } = await db.from('reservations').select('data, pessoas').gte('data', cells[0]).lte('data', cells[cells.length - 1]);
+    if (error) { console.error(error); monthGridEl.innerHTML = '<div class="empty"><p>Não deu pra carregar o mês.</p></div>'; return; }
+    const byDay = {};
+    data.forEach(r => { byDay[r.data] = byDay[r.data] || { count: 0, pessoas: 0 }; byDay[r.data].count++; byDay[r.data].pessoas += Number(r.pessoas) || 0; });
+    const todayISO = toISODate(new Date());
+    const curMonth = first.getMonth();
+    const header = WEEKDAYS_SHORT.map(w => `<div>${w}</div>`).join('');
+    const grid = cells.map(d => {
+      const dt = fromISODate(d);
+      const outside = dt.getMonth() !== curMonth;
+      const info = byDay[d];
+      return `<div class="month-cell${outside ? ' outside' : ''}${d === todayISO ? ' is-today' : ''}${info ? ' has-res' : ''}" data-date="${d}">
+        <div class="num">${dt.getDate()}</div>
+        ${info ? `<div class="badge">${info.count}·${info.pessoas}p</div>` : ''}
+      </div>`;
+    }).join('');
+    monthGridEl.innerHTML = `<div class="cal-header">${header}</div><div class="month-grid">${grid}</div>`;
+    monthGridEl.querySelectorAll('.month-cell').forEach(cell => cell.addEventListener('click', () => {
+      selectedDate = cell.dataset.date; weekAnchor = selectedDate; renderDayLabel(); subscribe(); showTab('day');
     }));
   }
 
@@ -444,15 +563,28 @@
   const iTelefone = document.getElementById('i-telefone');
   const iData = document.getElementById('i-data');
   const iHorario = document.getElementById('i-horario');
-  const iPessoas = document.getElementById('i-pessoas');
   const iObs = document.getElementById('i-obs');
   const iAtendente = document.getElementById('i-atendente');
   const deleteBtn = document.getElementById('deleteBtn');
+  const adultosValEl = document.getElementById('adultosVal');
+  const criancasValEl = document.getElementById('criancasVal');
+  let adultosCount = 1;
+  let criancasCount = 0;
+
+  function renderCounters() {
+    adultosValEl.textContent = adultosCount;
+    criancasValEl.textContent = criancasCount;
+    document.getElementById('f-pessoas').classList.remove('invalid');
+  }
+  document.getElementById('adultosMinus').addEventListener('click', () => { adultosCount = Math.max(0, adultosCount - 1); renderCounters(); });
+  document.getElementById('adultosPlus').addEventListener('click', () => { adultosCount = Math.min(99, adultosCount + 1); renderCounters(); });
+  document.getElementById('criancasMinus').addEventListener('click', () => { criancasCount = Math.max(0, criancasCount - 1); renderCounters(); });
+  document.getElementById('criancasPlus').addEventListener('click', () => { criancasCount = Math.min(99, criancasCount + 1); renderCounters(); });
 
   function clearErrors() {
     ['f-nome','f-telefone','f-data','f-horario','f-pessoas'].forEach(id => document.getElementById(id).classList.remove('invalid'));
   }
-  [iNome, iTelefone, iData, iHorario, iPessoas].forEach(input => input.addEventListener('input', () => input.closest('.field').classList.remove('invalid')));
+  [iNome, iTelefone, iData, iHorario].forEach(input => input.addEventListener('input', () => input.closest('.field').classList.remove('invalid')));
 
   function openAdd() {
     editingId = null;
@@ -460,7 +592,8 @@
     deleteBtn.style.display = 'none';
     clearErrors();
     iNome.value = ''; iTelefone.value = ''; iData.value = selectedDate; iHorario.value = '';
-    iPessoas.value = ''; iObs.value = ''; iAtendente.value = '';
+    adultosCount = 1; criancasCount = 0; renderCounters();
+    iObs.value = ''; iAtendente.value = '';
     sheetBackdrop.classList.add('open');
   }
 
@@ -470,7 +603,11 @@
     deleteBtn.style.display = 'block';
     clearErrors();
     iNome.value = r.nome || ''; iTelefone.value = r.telefone || ''; iData.value = r.data || selectedDate;
-    iHorario.value = r.horario || ''; iPessoas.value = r.pessoas || ''; iObs.value = r.observacao || '';
+    iHorario.value = r.horario || '';
+    criancasCount = Number(r.criancas) || 0;
+    adultosCount = Math.max(0, (Number(r.pessoas) || 0) - criancasCount);
+    renderCounters();
+    iObs.value = r.observacao || '';
     iAtendente.value = r.atendente || '';
     sheetBackdrop.classList.add('open');
   }
@@ -493,14 +630,14 @@
     if (!iTelefone.value.trim()) { document.getElementById('f-telefone').classList.add('invalid'); ok = false; }
     if (!iData.value) { document.getElementById('f-data').classList.add('invalid'); ok = false; }
     if (!iHorario.value) { document.getElementById('f-horario').classList.add('invalid'); ok = false; }
-    if (!iPessoas.value || Number(iPessoas.value) < 1) { document.getElementById('f-pessoas').classList.add('invalid'); ok = false; }
+    if (adultosCount + criancasCount < 1) { document.getElementById('f-pessoas').classList.add('invalid'); ok = false; }
     if (!ok) return;
     if (!db) { showToast('Sem conexão com o banco.'); return; }
 
     const payload = {
       nome: iNome.value.trim(), telefone: iTelefone.value.trim(), data: iData.value,
-      horario: iHorario.value, pessoas: Number(iPessoas.value), observacao: iObs.value.trim(),
-      atendente: iAtendente.value.trim()
+      horario: iHorario.value, pessoas: adultosCount + criancasCount, criancas: criancasCount,
+      observacao: iObs.value.trim(), atendente: iAtendente.value.trim()
     };
 
     const saveBtn = document.getElementById('saveBtn');

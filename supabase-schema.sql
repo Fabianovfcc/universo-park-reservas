@@ -7,6 +7,7 @@ create table if not exists reservations (
   data date not null,
   horario text not null,
   pessoas integer not null default 1,
+  criancas integer not null default 0,
   observacao text not null default '',
   atendente text not null default '',
   status text not null default 'pendente',
