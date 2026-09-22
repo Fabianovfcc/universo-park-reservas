@@ -29,7 +29,7 @@
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #14190F;
       --surface: #1D2418;
       --ink: #EDEFE7;
@@ -44,6 +44,21 @@
       --danger: #E0897B;
       --danger-bg: #3A211D;
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14190F;
+    --surface: #1D2418;
+    --ink: #EDEFE7;
+    --ink-soft: #B7BEB0;
+    --ink-muted: #7C8378;
+    --line: #313A2A;
+    --accent: #E0AA5A;
+    --accent-ink: #F5DDAF;
+    --accent-bg: #3A2E14;
+    --sage: #93B396;
+    --sage-bg: #23301F;
+    --danger: #E0897B;
+    --danger-bg: #3A211D;
   }
   * { box-sizing: border-box; }
   html { scroll-padding-top: env(safe-area-inset-top, 0px); }
@@ -153,6 +168,7 @@
     <h1>Reservas</h1>
     <div style="display:flex; align-items:center; gap:8px;">
       <span>Universo Park</span>
+      <button class="icon-btn" id="themeToggle" aria-label="Alternar tema claro/escuro" style="width:32px;height:32px;font-size:14px;">🌙</button>
       <button class="icon-btn" id="openSearch" aria-label="Buscar reserva" style="width:32px;height:32px;font-size:14px;">⌕</button>
     </div>
   </div>
@@ -671,6 +687,35 @@
     closeSheet();
     loadDay();
   });
+
+  // --- Tema claro/escuro ---
+  const themeToggle = document.getElementById('themeToggle');
+  function systemPrefersDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function effectiveTheme() {
+    const explicit = document.documentElement.getAttribute('data-theme');
+    return explicit || (systemPrefersDark() ? 'dark' : 'light');
+  }
+  function updateThemeIcon() {
+    themeToggle.textContent = effectiveTheme() === 'dark' ? '☀' : '🌙';
+  }
+  function applyTheme(theme) {
+    if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+    else document.documentElement.removeAttribute('data-theme');
+    updateThemeIcon();
+  }
+  themeToggle.addEventListener('click', () => {
+    const next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    applyTheme(next);
+  });
+  (function initTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem('theme'); } catch (e) {}
+    if (saved === 'light' || saved === 'dark') applyTheme(saved);
+    else updateThemeIcon();
+  })();
 
   // --- Init ---
   renderDayLabel();
