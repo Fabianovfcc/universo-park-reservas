@@ -114,6 +114,8 @@
   .card .obs { font-size: 12.5px; color: var(--sage); background: var(--sage-bg); display: inline-block; padding: 3px 9px; border-radius: 999px; margin-top: 2px; }
   .card .wa { color: var(--ink-muted); text-decoration: none; font-size: 12.5px; }
   .card .wa:hover { color: var(--sage); }
+  .card .actions { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; }
+  .card button.wa { background: none; border: none; padding: 0; font-family: inherit; cursor: pointer; }
   .status-btn { position: absolute; right: 12px; bottom: 12px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink-muted); font-size: 13px; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1; }
   .card.status-chegou { border-color: var(--sage); }
   .card.status-chegou .status-btn { background: var(--sage-bg); border-color: var(--sage); color: var(--sage); }
@@ -357,11 +359,58 @@
     return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function waLink(telefone) {
+  function waLink(telefone, text) {
     const digits = String(telefone || '').replace(/\D/g, '');
     if (!digits) return null;
     const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return `https://wa.me/${withCountry}`;
+    return `https://wa.me/${withCountry}` + (text ? `?text=${encodeURIComponent(text)}` : '');
+  }
+
+  function plural(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
+
+  function confirmationMessage(r) {
+    const dt = fromISODate(r.data);
+    const primeiroNome = String(r.nome || '').trim().split(/\s+/)[0] || '';
+    const total = Number(r.pessoas) || 0;
+    const criancas = Number(r.criancas) || 0;
+    const adultos = Math.max(0, total - criancas);
+    let pessoasTxt = plural(total, 'pessoa', 'pessoas');
+    if (criancas > 0) pessoasTxt += ` (${plural(adultos, 'adulto', 'adultos')} e ${plural(criancas, 'criança', 'crianças')})`;
+    const lines = [
+      `Olá, ${primeiroNome}! 😊`,
+      `Sua reserva no *Universo Park* está confirmada:`,
+      ``,
+      `📅 *${WEEKDAYS[dt.getDay()]}, ${dt.getDate()} de ${MONTHS_FULL[dt.getMonth()]}*`,
+      `🕐 *${r.horario || ''}*`,
+      `👥 *${pessoasTxt}*`
+    ];
+    if (r.observacao) lines.push(`📝 ${r.observacao}`);
+    lines.push(``, `Qualquer mudança, é só avisar por aqui. Até lá! 🎉`);
+    return lines.join('\n');
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+  }
+
+  const rowsById = new Map();
+
+  function bindCardActions(container) {
+    container.querySelectorAll('[data-copy-id]').forEach(el => el.addEventListener('click', async e => {
+      e.stopPropagation();
+      const r = rowsById.get(el.dataset.copyId);
+      if (!r) return;
+      await copyText(confirmationMessage(r));
+      showToast('Mensagem copiada.');
+    }));
   }
 
   const STATUS_ICON = { pendente: '○', chegou: '✓', nao_veio: '✕' };
@@ -369,7 +418,8 @@
 
   function cardHtml(r) {
     const status = r.status || 'pendente';
-    const wa = waLink(r.telefone);
+    rowsById.set(String(r.id), r);
+    const wa = waLink(r.telefone, confirmationMessage(r));
     return `
       <div class="card status-${status}" data-id="${r.id}">
         <div class="time">${escapeHtml(r.horario || '—')}</div>
@@ -377,9 +427,12 @@
           <p class="name">${escapeHtml(r.nome)}</p>
           <p class="meta">
             <span>${escapeHtml(r.pessoas)} pessoa${Number(r.pessoas) === 1 ? '' : 's'}${Number(r.criancas) > 0 ? ` (${r.criancas} criança${Number(r.criancas) === 1 ? '' : 's'})` : ''}</span>
-            ${wa ? `<a class="wa" href="${wa}" target="_blank" rel="noopener" onclick="event.stopPropagation()">whatsapp ↗</a>` : ''}
           </p>
           ${r.observacao ? `<span class="obs">${escapeHtml(r.observacao)}</span>` : ''}
+          <p class="actions">
+            <button type="button" class="wa" data-copy-id="${r.id}">copiar confirmação</button>
+            ${wa ? `<a class="wa" href="${escapeHtml(wa)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">enviar no whatsapp ↗</a>` : ''}
+          </p>
         </div>
         <button class="status-btn" data-status-id="${r.id}" data-status="${status}" aria-label="Marcar chegada" onclick="event.stopPropagation()">${STATUS_ICON[status]}</button>
       </div>`;
@@ -394,6 +447,7 @@
     summaryEl.innerHTML = `<span><b>${rows.length}</b> reserva${rows.length === 1 ? '' : 's'}</span><span><b>${totalPessoas}</b> pessoas reservadas</span>`;
     listEl.querySelectorAll('.card').forEach(card => card.addEventListener('click', () => openEdit(card.dataset.id)));
     listEl.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => cycleStatus(btn.dataset.statusId, btn.dataset.status)));
+    bindCardActions(listEl);
   }
 
   async function cycleStatus(id, current) {
@@ -558,6 +612,7 @@
       if (row) { closeSearch(); openEditRow(row); }
     }));
     searchResults.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => cycleStatus(btn.dataset.statusId, btn.dataset.status)));
+    bindCardActions(searchResults);
   }
 
   searchInput.addEventListener('input', () => {
