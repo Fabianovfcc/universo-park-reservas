@@ -363,7 +363,7 @@
     const digits = String(telefone || '').replace(/\D/g, '');
     if (!digits) return null;
     const withCountry = digits.length <= 11 ? '55' + digits : digits;
-    return `https://wa.me/${withCountry}` + (text ? `?text=${encodeURIComponent(text)}` : '');
+    return `https://api.whatsapp.com/send/?phone=${withCountry}` + (text ? `&text=${encodeURIComponent(text)}` : '');
   }
 
   function plural(n, one, many) { return `${n} ${n === 1 ? one : many}`; }
