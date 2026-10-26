@@ -61,7 +61,8 @@
     --danger-bg: #3A211D;
   }
   * { box-sizing: border-box; }
-  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+  html, body, button, input, textarea, a { touch-action: manipulation; }
   html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
   body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); min-height: 100%; display: flex; flex-direction: column; }
   .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
@@ -129,7 +130,7 @@
   .sheet h2 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin: 4px 0 16px; }
   .field { margin-bottom: 13px; }
   .field label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 5px; }
-  .field input, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: var(--font-body); }
+  .field input, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: var(--font-body); }
   .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
   .row2 { display: flex; gap: 10px; }
   .row2 .field { flex: 1; }
@@ -138,12 +139,25 @@
   .field.invalid .counter { border-color: var(--danger); }
   .field.invalid .err { display: block; }
   .counter-row { display: flex; gap: 10px; }
-  .counter { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .counter-label { font-size: 12px; color: var(--ink-soft); }
-  .counter-controls { display: flex; align-items: center; gap: 12px; }
-  .counter-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 16px; font-family: var(--font-body); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .counter-btn:active { transform: scale(0.94); }
-  .counter-controls .val { min-width: 22px; text-align: center; font-weight: 600; font-size: 15px; }
+  .counter { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .counter:focus-within { border-color: var(--accent); }
+  .counter-label { font-size: 12.5px; color: var(--ink-soft); }
+  .counter-controls { display: flex; align-items: center; gap: 4px; width: 100%; }
+  .counter-btn { width: 50px; height: 50px; flex: 0 0 50px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 28px; line-height: 1; padding: 0; font-family: var(--font-body); display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  .counter-btn:active { transform: scale(0.94); background: var(--accent-bg); }
+  .counter .counter-input { flex: 1; min-width: 0; width: 100%; height: 50px; border: none; background: transparent; padding: 0; border-radius: 8px; text-align: center; font-weight: 600; font-size: 24px; color: var(--ink); font-family: var(--font-body); }
+  .counter .counter-input:focus { outline: none; }
+
+  .paste-box { background: var(--accent-bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+  .paste-box label { display: block; font-size: 12.5px; color: var(--accent-ink); font-weight: 600; margin-bottom: 6px; }
+  .paste-box textarea { width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: var(--font-body); resize: vertical; min-height: 84px; }
+  .paste-box textarea:focus { outline: none; border-color: var(--accent); }
+  .paste-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .paste-actions .btn { padding: 12px 10px; }
+  .paste-result { margin-top: 10px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); display: none; }
+  .paste-result.show { display: block; }
+  .paste-result .ok { color: var(--ink); }
+  .paste-result .warn { color: var(--danger); }
   .sheet-actions { display: flex; gap: 10px; margin-top: 18px; }
   .btn { flex: 1; border-radius: 10px; padding: 12px; font-size: 14.5px; font-weight: 600; font-family: var(--font-body); border: none; cursor: pointer; }
   .btn-primary { background: var(--ink); color: var(--bg); }
@@ -156,7 +170,7 @@
   .search-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 60; display: none; flex-direction: column; }
   .search-overlay.open { display: flex; }
   .search-top { display: flex; align-items: center; gap: 10px; padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; border-bottom: 1px solid var(--line); }
-  .search-top input { flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: var(--font-body); }
+  .search-top input { flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; padding: 10px 12px; font-size: 16px; font-family: var(--font-body); }
   .search-top input:focus { outline: none; border-color: var(--accent); }
   .search-results { flex: 1; overflow-y: auto; padding: 14px 18px 40px; max-width: 560px; margin: 0 auto; width: 100%; }
   .search-hint { text-align: center; color: var(--ink-muted); font-size: 13.5px; padding: 40px 20px; }
@@ -230,15 +244,23 @@
 <div class="sheet-backdrop" id="sheetBackdrop">
   <div class="sheet">
     <h2 id="sheetTitle">Nova reserva</h2>
+    <div class="paste-box" id="pasteBox">
+      <label for="i-paste">Colar texto da reserva (WhatsApp / Direct)</label>
+      <textarea id="i-paste" rows="3" placeholder="Katia&#10;15 pessoas&#10;sábado 26/09 19:00&#10;cupom megusta"></textarea>
+      <div class="paste-actions">
+        <button type="button" class="btn btn-primary" id="parseBtn">Preencher campos</button>
+        <button type="button" class="btn btn-ghost" id="clearPasteBtn" style="flex:0 0 auto">Limpar</button>
+      </div>
+      <div class="paste-result" id="pasteResult" aria-live="polite"></div>
+    </div>
     <div class="field" id="f-nome">
       <label for="i-nome">Nome</label>
       <input id="i-nome" type="text" placeholder="Nome de quem reservou">
       <div class="err">Informe o nome.</div>
     </div>
     <div class="field" id="f-telefone">
-      <label for="i-telefone">Telefone</label>
+      <label for="i-telefone">Telefone (opcional)</label>
       <input id="i-telefone" type="tel" placeholder="62999999999">
-      <div class="err">Informe o telefone.</div>
     </div>
     <div class="row2">
       <div class="field" id="f-data">
@@ -259,7 +281,7 @@
           <span class="counter-label">Adultos</span>
           <div class="counter-controls">
             <button type="button" class="counter-btn" id="adultosMinus" aria-label="Diminuir adultos">−</button>
-            <span class="val" id="adultosVal">1</span>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" class="counter-input" id="adultosVal" aria-label="Quantidade de adultos" value="1">
             <button type="button" class="counter-btn" id="adultosPlus" aria-label="Aumentar adultos">+</button>
           </div>
         </div>
@@ -267,7 +289,7 @@
           <span class="counter-label">Crianças</span>
           <div class="counter-controls">
             <button type="button" class="counter-btn" id="criancasMinus" aria-label="Diminuir crianças">−</button>
-            <span class="val" id="criancasVal">0</span>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" class="counter-input" id="criancasVal" aria-label="Quantidade de crianças" value="0">
             <button type="button" class="counter-btn" id="criancasPlus" aria-label="Aumentar crianças">+</button>
           </div>
         </div>
@@ -637,20 +659,42 @@
   const iObs = document.getElementById('i-obs');
   const iAtendente = document.getElementById('i-atendente');
   const deleteBtn = document.getElementById('deleteBtn');
-  const adultosValEl = document.getElementById('adultosVal');
-  const criancasValEl = document.getElementById('criancasVal');
+  const pasteBox = document.getElementById('pasteBox');
+  const iPaste = document.getElementById('i-paste');
+  const pasteResult = document.getElementById('pasteResult');
+  const adultosInput = document.getElementById('adultosVal');
+  const criancasInput = document.getElementById('criancasVal');
+  const MAX_PEOPLE = 999;
   let adultosCount = 1;
   let criancasCount = 0;
 
+  function clampCount(n) {
+    n = Math.floor(Number(n));
+    if (!isFinite(n) || n < 0) return 0;
+    return Math.min(MAX_PEOPLE, n);
+  }
+
   function renderCounters() {
-    adultosValEl.textContent = adultosCount;
-    criancasValEl.textContent = criancasCount;
+    adultosInput.value = adultosCount;
+    criancasInput.value = criancasCount;
     document.getElementById('f-pessoas').classList.remove('invalid');
   }
-  document.getElementById('adultosMinus').addEventListener('click', () => { adultosCount = Math.max(0, adultosCount - 1); renderCounters(); });
-  document.getElementById('adultosPlus').addEventListener('click', () => { adultosCount = Math.min(99, adultosCount + 1); renderCounters(); });
-  document.getElementById('criancasMinus').addEventListener('click', () => { criancasCount = Math.max(0, criancasCount - 1); renderCounters(); });
-  document.getElementById('criancasPlus').addEventListener('click', () => { criancasCount = Math.min(99, criancasCount + 1); renderCounters(); });
+
+  // Cada contador: botões − e + (grandes) e campo onde dá pra digitar o número direto.
+  function bindCounter(input, minusId, plusId, get, set) {
+    document.getElementById(minusId).addEventListener('click', () => { set(clampCount(get() - 1)); renderCounters(); });
+    document.getElementById(plusId).addEventListener('click', () => { set(clampCount(get() + 1)); renderCounters(); });
+    input.addEventListener('focus', () => setTimeout(() => { try { input.select(); } catch (e) {} }, 0));
+    input.addEventListener('input', () => {
+      const digits = input.value.replace(/\D/g, '').slice(0, 3);
+      if (digits !== input.value) input.value = digits;
+      set(digits === '' ? 0 : clampCount(digits));
+      document.getElementById('f-pessoas').classList.remove('invalid');
+    });
+    input.addEventListener('blur', () => { input.value = get(); });
+  }
+  bindCounter(adultosInput, 'adultosMinus', 'adultosPlus', () => adultosCount, v => { adultosCount = v; });
+  bindCounter(criancasInput, 'criancasMinus', 'criancasPlus', () => criancasCount, v => { criancasCount = v; });
 
   function clearErrors() {
     ['f-nome','f-telefone','f-data','f-horario','f-pessoas'].forEach(id => document.getElementById(id).classList.remove('invalid'));
@@ -661,6 +705,8 @@
     editingId = null;
     sheetTitle.textContent = 'Nova reserva';
     deleteBtn.style.display = 'none';
+    pasteBox.style.display = '';
+    iPaste.value = ''; pasteResult.className = 'paste-result'; pasteResult.innerHTML = '';
     clearErrors();
     iNome.value = ''; iTelefone.value = ''; iData.value = selectedDate; iHorario.value = '';
     adultosCount = 1; criancasCount = 0; renderCounters();
@@ -672,6 +718,7 @@
     editingId = r.id;
     sheetTitle.textContent = 'Editar reserva';
     deleteBtn.style.display = 'block';
+    pasteBox.style.display = 'none';
     clearErrors();
     iNome.value = r.nome || ''; iTelefone.value = r.telefone || ''; iData.value = r.data || selectedDate;
     iHorario.value = r.horario || '';
@@ -698,7 +745,6 @@
     clearErrors();
     let ok = true;
     if (!iNome.value.trim()) { document.getElementById('f-nome').classList.add('invalid'); ok = false; }
-    if (!iTelefone.value.trim()) { document.getElementById('f-telefone').classList.add('invalid'); ok = false; }
     if (!iData.value) { document.getElementById('f-data').classList.add('invalid'); ok = false; }
     if (!iHorario.value) { document.getElementById('f-horario').classList.add('invalid'); ok = false; }
     if (adultosCount + criancasCount < 1) { document.getElementById('f-pessoas').classList.add('invalid'); ok = false; }
@@ -742,6 +788,275 @@
     closeSheet();
     loadDay();
   });
+
+  // --- Interpretador de texto colado (roda no navegador, sem IA externa) ---
+  // PARSER START
+  const OBS_WORDS = /desconto|cupom|cupon|passaporte|autist|crian[çc]|aplicar|mesa|reserva|\bsem\b|\bcom\b|atra[çc]|brinqued|cortesia|anivers|ingresso|pagamento|\bpix\b|\bobs\b|galaxy|megusta|promo/i;
+  const NUM_WORD = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, 'três': 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9, dez: 10 };
+  const NUM_WORD_RE = '(?:uma?|duas?|dois|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez)';
+  const L = 'A-Za-zÀ-ÿ';
+
+  function wordToNum(w) { return NUM_WORD[String(w).toLowerCase()] || 0; }
+  function stripAcc(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function isoOf(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+
+  function titleCase(s) {
+    const small = new Set(['da', 'de', 'do', 'dos', 'das', 'e']);
+    return s.toLowerCase().split(/\s+/).map((w, i) => (i > 0 && small.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  function insideParens(line, idx) {
+    const open = line.lastIndexOf('(', idx);
+    return open !== -1 && line.indexOf(')', open) >= idx;
+  }
+
+  function parseReservationText(raw, today, fallbackISO) {
+    const out = { nome: '', telefone: '', data: '', horario: '', adultos: null, criancas: 0, total: null, observacao: '', warnings: [], found: {} };
+    today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    let lines = String(raw || '').replace(/\r/g, '').split('\n')
+      .map(l => l.replace(/^\[[^\]]*\]\s*[^:\n]{1,40}:\s*/, '')
+                 .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}️‎‏]/gu, '')
+                 .replace(/^[\s•*›>\-–—]+/, '')
+                 .trim())
+      .filter(Boolean);
+    lines = lines.filter(l => !/^(encaminhada|solicita[çc][aã]o de reserva|nova reserva|reserva|dados da reserva|confirma[çc][aã]o( de reserva)?|bom dia|boa tarde|boa noite|oi|ol[aá]|opa)[\s,.!:?]*$/i.test(l));
+
+    let wdWord = null, numDate = null, relDate = null, dayOnly = null;
+    let adultosVal = null, criancasVal = null, totalMesa = null, totalOther = null;
+
+    const rests = lines.map(line => {
+      let rest = line;
+
+      // telefone
+      const ph = rest.match(/(^|[^\d])((?:\+?55[\s-]?)?\(?\d{2}\)?[\s-]?9?\d{4}[\s.-]?\d{4})(?!\d)/);
+      if (ph) {
+        let digits = ph[2].replace(/\D/g, '');
+        if (digits.length >= 12 && digits.startsWith('55')) digits = digits.slice(2);
+        if ((digits.length === 10 || digits.length === 11) && !out.telefone) out.telefone = digits;
+        rest = rest.replace(ph[0], ph[1] + ' ');
+      }
+
+      // data numérica (26/09, 26/09/2026, 26-09)
+      const nd = rest.match(/(^|[^\d])(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?(?!\d)/);
+      if (nd) {
+        const dd = +nd[2], mm = +nd[3];
+        if (dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12) {
+          if (!numDate) numDate = { d: dd, m: mm, y: nd[4] ? (+nd[4] < 100 ? 2000 + +nd[4] : +nd[4]) : null };
+          rest = rest.replace(nd[0], nd[1] + ' ');
+        }
+      }
+
+      // dia da semana
+      const wd = rest.match(new RegExp(`(^|[^${L}])(domingo|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)(?:[\\s-]*feira)?(?![${L}])`, 'i'));
+      if (wd) {
+        if (wdWord === null) wdWord = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 }[stripAcc(wd[2]).toLowerCase()];
+        rest = rest.replace(wd[0], wd[1] + ' ');
+      }
+
+      // hoje / amanhã
+      const rel = rest.match(new RegExp(`(^|[^${L}])(depois de amanh[ãa]|amanh[ãa]|hoje)(?![${L}])`, 'i'));
+      if (rel) {
+        if (!relDate) { const w = stripAcc(rel[2]).toLowerCase(); relDate = w === 'hoje' ? 0 : (w === 'amanha' ? 1 : 2); }
+        rest = rest.replace(rel[0], rel[1] + ' ');
+      }
+
+      // "dia 26"
+      const dm = rest.match(/(^|[^\d])dia\s+(\d{1,2})(?![\d\/.:h])/i);
+      if (dm && +dm[2] >= 1 && +dm[2] <= 31) {
+        if (dayOnly === null) dayOnly = +dm[2];
+        rest = rest.replace(dm[0], dm[1] + ' ');
+      }
+
+      // horário (19:30, 19:30h, 16h, 19h30, às 19, 19 horas)
+      let tm = rest.match(new RegExp(`(^|[^\\d:.,\\/])([01]?\\d|2[0-3])(?::|h)([0-5]\\d)?(?:h(?![${L}]))?(?!\\d)`, 'i'));
+      let th = null, tmin = '00';
+      if (tm) { th = +tm[2]; tmin = tm[3] || '00'; rest = rest.replace(tm[0], tm[1] + ' '); }
+      else {
+        tm = rest.match(new RegExp(`(^|[^${L}\\d])[àa]s?\\s+([01]?\\d|2[0-3])(?![\\d\\/:.h])(?:\\s*(?:horas?|hrs?))?`, 'i'))
+          || rest.match(new RegExp(`(^|[^\\d])([01]?\\d|2[0-3])\\s*(?:horas?|hrs?)(?![${L}])`, 'i'));
+        if (tm) { th = +tm[2]; rest = rest.replace(tm[0], tm[1] + ' '); }
+      }
+      if (th !== null && !out.horario) out.horario = `${pad2(th)}:${tmin}`;
+
+      // crianças / adultos (com número ou por extenso, ou "crianças: 3")
+      let km = rest.match(new RegExp(`(^|[^\\d])(\\d{1,3})\\s*(?:crian[çc]as?|kids?)(?![${L}])`, 'i'));
+      if (km) { if (criancasVal === null) criancasVal = +km[2]; rest = rest.replace(km[0], km[1] + ' '); }
+      else {
+        km = rest.match(new RegExp(`(^|[^${L}])(${NUM_WORD_RE})\\s+crian[çc]as?(?![${L}])`, 'i'))
+          || rest.match(/(crian[çc]as?)\s*[:=]\s*(\d{1,3})/i);
+        if (km) {
+          const n = /^\d/.test(km[2]) ? +km[2] : wordToNum(stripAcc(km[2]));
+          if (criancasVal === null) criancasVal = n;
+          rest = rest.replace(km[0], (km[1] && !/crian/i.test(km[1]) ? km[1] : '') + ' ');
+        }
+      }
+      let am = rest.match(new RegExp(`(^|[^\\d])(\\d{1,3})\\s*adultos?(?![${L}])`, 'i'));
+      if (am) { if (adultosVal === null) adultosVal = +am[2]; rest = rest.replace(am[0], am[1] + ' '); }
+      else {
+        am = rest.match(new RegExp(`(^|[^${L}])(${NUM_WORD_RE})\\s+adultos?(?![${L}])`, 'i'))
+          || rest.match(/(adultos?)\s*[:=]\s*(\d{1,3})/i);
+        if (am) {
+          const n = /^\d/.test(am[2]) ? +am[2] : wordToNum(stripAcc(am[2]));
+          if (adultosVal === null) adultosVal = n;
+          rest = rest.replace(am[0], (am[1] && !/adulto/i.test(am[1]) ? am[1] : '') + ' ');
+        }
+      }
+
+      // total de pessoas: "mesa para 30 pessoas" (prioridade) ou "15 pessoas" / "pessoas: 15"
+      const mesa = rest.match(/(^|[^A-Za-zÀ-ÿ])mesa\s+(?:(?:para|pra|de|p\/)\s*(\d{1,3})|(\d{1,3})\s*pessoas?)(?:\s*pessoas?)?(?![A-Za-zÀ-ÿ\d])/i);
+      if (mesa) {
+        if (totalMesa === null) totalMesa = +(mesa[2] || mesa[3]);
+        rest = rest.replace(mesa[0], mesa[1] + ' ');
+      } else {
+        const lbl = rest.match(/(?:n[uú]mero\s+de\s+pessoas|pessoas|quantidade(?:\s+de\s+pessoas)?|qtd|qtde)\s*[:=]\s*(\d{1,3})/i);
+        if (lbl) {
+          if (totalOther === null) totalOther = +lbl[1];
+          rest = rest.replace(lbl[0], ' ');
+        } else {
+          const re = new RegExp(`(^|[^\\d])(\\d{1,3})\\s*(?:pessoas?|pax|convidados?|lugares)(?![${L}])`, 'ig');
+          let m;
+          while ((m = re.exec(rest)) !== null) {
+            const idx = m.index + m[1].length;
+            if (insideParens(rest, idx)) continue;
+            if (/desconto|cupom|autist|passaporte|ingresso|atra[çc]/i.test(rest)) continue;
+            if (totalOther === null) totalOther = +m[2];
+            rest = rest.replace(m[0], m[1] + ' ');
+            break;
+          }
+        }
+      }
+      return rest;
+    });
+
+    // resolve data
+    const hasWd = wdWord !== null;
+    if (numDate) {
+      let y = numDate.y;
+      if (!y) {
+        y = today.getFullYear();
+        const cand = new Date(y, numDate.m - 1, numDate.d);
+        if ((today - cand) / 86400000 > 45) y += 1;
+      }
+      const dt = new Date(y, numDate.m - 1, numDate.d);
+      if (dt.getMonth() === numDate.m - 1 && dt.getDate() === numDate.d) {
+        out.data = isoOf(dt);
+        if (hasWd && dt.getDay() !== wdWord) {
+          const nomes = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+          out.warnings.push(`O texto diz ${nomes[wdWord]}, mas ${pad2(numDate.d)}/${pad2(numDate.m)} é ${nomes[dt.getDay()]}. Confere a data.`);
+        }
+      }
+    } else if (relDate !== null) {
+      const dt = new Date(today); dt.setDate(dt.getDate() + relDate); out.data = isoOf(dt);
+    } else if (hasWd) {
+      const dt = new Date(today); dt.setDate(dt.getDate() + ((wdWord - today.getDay() + 7) % 7)); out.data = isoOf(dt);
+    } else if (dayOnly !== null) {
+      let dt = new Date(today.getFullYear(), today.getMonth(), dayOnly);
+      if (dt < today) dt = new Date(today.getFullYear(), today.getMonth() + 1, dayOnly);
+      out.data = isoOf(dt);
+    }
+    out.found.data = !!out.data;
+    const explicitDate = out.found.data;
+    if (!out.data) {
+      out.data = fallbackISO || isoOf(today);
+      out.warnings.push('Não achei a data no texto — usei o dia que está aberto no sistema.');
+    }
+
+    if (out.horario) {
+      const h = +out.horario.slice(0, 2);
+      if (h < 10) out.warnings.push(`Horário ficou ${out.horario} (manhã). Se era à noite, ajusta.`);
+    }
+    out.found.horario = !!out.horario;
+    out.found.telefone = !!out.telefone;
+
+    // pessoas
+    let kids = criancasVal === null ? 0 : criancasVal;
+    let adults = adultosVal;
+    let total = totalMesa !== null ? totalMesa : totalOther;
+    if (adults !== null && total === null) total = adults + kids;
+    else if (adults === null && total !== null) {
+      adults = total - kids;
+      if (adults < 0) { out.warnings.push('Crianças maior que o total de pessoas — somei as crianças ao total.'); adults = total; total = adults + kids; }
+    } else if (adults !== null && total !== null && adults + kids !== total) {
+      out.warnings.push(`O texto diz ${total} pessoas, mas ${adults} adultos + ${kids} crianças = ${adults + kids}. Usei ${adults + kids}.`);
+      total = adults + kids;
+    }
+    out.found.pessoas = total !== null;
+    out.adultos = adults; out.criancas = kids; out.total = total;
+
+    // nome e observações (o que sobrou das linhas)
+    const FILLER = /(^|[^A-Za-zÀ-ÿ])(s[ãa]o|tem|com|umas?|uns|e|mais|total|de|para|pra|p\/|mesa|pessoas?|[àáa]s)(?![A-Za-zÀ-ÿ])/gi;
+    const LABEL = /^\s*(nome do cliente|cliente|nome|telefone|tel|whatsapp|zap|contato|data|dia|hor[aá]rio|hora|observa[çc][oõ]es|observa[çc][aã]o|obs|adultos|crian[çc]as|pessoas)\s*[:=\-]?\s*/i;
+    const TRIM = /^[\s,;:\-–—|.]+|[\s,;:\-–—|.]+$/g;
+    const obs = [];
+    const pieces = [];
+    rests.forEach(r => r.split(/[;,]/).forEach(p => pieces.push(p)));
+    pieces.forEach(r => {
+      let t = r.replace(LABEL, '').replace(/\(\s*\)/g, ' ').replace(TRIM, '').replace(/\s{2,}/g, ' ').trim();
+      if (!t) return;
+      if (!t.replace(FILLER, '$1').replace(TRIM, '').trim()) return;
+      if (!out.nome && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'.\s]{1,40}$/.test(t) && t.split(/\s+/).length <= 4 && !OBS_WORDS.test(t)) {
+        out.nome = (t === t.toLowerCase() || t === t.toUpperCase()) ? titleCase(t) : t;
+        return;
+      }
+      obs.push(t.charAt(0).toUpperCase() + t.slice(1));
+    });
+    out.observacao = obs.join('; ');
+    out.found.nome = !!out.nome;
+
+    // se não achou nada que pareça reserva, não inventa nome nem observação
+    if (!explicitDate && !out.found.horario && !out.found.pessoas && !out.found.telefone) {
+      out.nome = ''; out.observacao = ''; out.found.nome = false;
+      out.warnings = ['Não reconheci uma reserva nesse texto. Confere se copiou a mensagem completa ou preenche à mão.'];
+    }
+    return out;
+  }
+  // PARSER END
+
+  function describeDate(iso) {
+    const d = fromISODate(iso);
+    return `${WEEKDAYS_SHORT[d.getDay()]} ${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+  }
+
+  function runPasteParse() {
+    const raw = iPaste.value.trim();
+    if (!raw) {
+      pasteResult.className = 'paste-result show';
+      pasteResult.innerHTML = '<span class="warn">Cole o texto da reserva primeiro.</span>';
+      return;
+    }
+    const p = parseReservationText(raw, new Date(), selectedDate);
+    clearErrors();
+    iNome.value = p.nome;
+    iTelefone.value = p.telefone;
+    iData.value = p.data;
+    iHorario.value = p.horario;
+    iObs.value = p.observacao;
+    adultosCount = p.adultos === null ? 1 : clampCount(p.adultos);
+    criancasCount = clampCount(p.criancas);
+    renderCounters();
+
+    const parts = [];
+    if (p.nome) parts.push(escapeHtml(p.nome));
+    parts.push(describeDate(p.data));
+    if (p.horario) parts.push(p.horario);
+    if (p.total !== null) parts.push(`${p.total} pessoa${p.total === 1 ? '' : 's'}` + (p.criancas > 0 ? ` (${p.adultos} adulto${p.adultos === 1 ? '' : 's'} + ${p.criancas} criança${p.criancas === 1 ? '' : 's'})` : ''));
+    const warns = p.warnings.slice();
+    const missing = [];
+    if (!p.found.nome) missing.push('nome');
+    if (!p.found.horario) missing.push('horário');
+    if (!p.found.pessoas) missing.push('quantidade de pessoas');
+    if (missing.length) warns.unshift(`Faltou: ${missing.join(', ')}.`);
+    pasteResult.className = 'paste-result show';
+    pasteResult.innerHTML = `<div class="ok">Entendi: ${parts.join(' · ')}${p.observacao ? ' · ' + escapeHtml(p.observacao) : ''}${p.telefone ? '' : ' · sem telefone'}</div>` +
+      warns.map(w => `<div class="warn">${escapeHtml(w)}</div>`).join('') +
+      `<div>Confere os campos abaixo e toca em Salvar reserva.</div>`;
+  }
+
+  document.getElementById('parseBtn').addEventListener('click', runPasteParse);
+  document.getElementById('clearPasteBtn').addEventListener('click', () => { iPaste.value = ''; pasteResult.className = 'paste-result'; pasteResult.innerHTML = ''; iPaste.focus(); });
+  iPaste.addEventListener('paste', () => setTimeout(runPasteParse, 0));
 
   // --- Tema claro/escuro ---
   const themeToggle = document.getElementById('themeToggle');
